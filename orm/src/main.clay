@@ -1,0 +1,106 @@
+// web/orm -- ActiveRecord-style ORM over Clay's Db prototype
+//
+// Usage:
+//   import("web/orm")
+//
+//   db = Db open("app.db")
+//   Todo = Model define(db, "todos", ["title", "done"])
+//
+//   todo = Todo create(d)      // INSERT
+//   todos = Todo all()          // SELECT *
+//   todo = Todo find(1)         // SELECT WHERE id = ?
+//   todo set("done", 1)
+//   todo save()                 // UPDATE
+//   todo destroy()              // DELETE
+
+Model = Object clone {
+    _db = nil
+    _table = nil
+    _columns = nil
+
+    define(db, table, columns) {
+        m = self clone
+        m _db = db
+        m _table = table
+        m _columns = columns
+        m
+    }
+
+    // Create a new record, returns model instance with id
+    create(data) {
+        cols = ""
+        vals = ""
+        _columns each { |col|
+            v = data get(col)
+            (v != nil) ifTrue {
+                (cols length() > 0) ifTrue {
+                    cols = cols + ", "
+                    vals = vals + ", "
+                }
+                cols = cols + col
+                vals = vals + "'" + _db escape(v toString()) + "'"
+            }
+        }
+        sql = "INSERT INTO " + _table + " (" + cols + ") VALUES (" + vals + ")"
+        _db exec(sql)
+        id = _db lastInsertId()
+        self find(id)
+    }
+
+    // Find a record by id
+    find(id) {
+        rows = _db query("SELECT * FROM " + _table + " WHERE id = " + id toString())
+        (rows size() == 0) ifTrue { nil } ifFalse {
+            self _wrap(rows at(0))
+        }
+    }
+
+    // Get all records
+    all() {
+        rows = _db query("SELECT * FROM " + _table + " ORDER BY id")
+        rows map { |row| self _wrap(row) }
+    }
+
+    // Find records matching a condition
+    where(col, val) {
+        rows = _db query("SELECT * FROM " + _table +
+            " WHERE " + col + " = '" + _db escape(val toString()) + "' ORDER BY id")
+        rows map { |row| self _wrap(row) }
+    }
+
+    // Count all records
+    count() {
+        rows = _db query("SELECT COUNT(*) as cnt FROM " + _table)
+        rows at(0) get("cnt")
+    }
+
+    // Delete a record by id
+    delete(id) {
+        _db exec("DELETE FROM " + _table + " WHERE id = " + id toString())
+    }
+
+    // Update a record by id with a Dict of column values
+    update(id, data) {
+        sets = ""
+        _columns each { |col|
+            v = data get(col)
+            (v != nil) ifTrue {
+                (sets length() > 0) ifTrue { sets = sets + ", " }
+                sets = sets + col + " = '" + _db escape(v toString()) + "'"
+            }
+        }
+        (sets length() > 0) ifTrue {
+            _db exec("UPDATE " + _table + " SET " + sets + " WHERE id = " + id toString())
+        }
+    }
+
+    // Wrap a row Dict into a model instance
+    _wrap(row) {
+        inst = Object clone {}
+        inst _model = self
+        inst _data = row
+        inst _id = row get("id")
+
+        inst
+    }
+}

@@ -1,0 +1,67 @@
+// web/router -- URL pattern matching with :param capture
+//
+// Usage:
+//   import("web/router")
+//
+//   router = Router new()
+//   router add("GET", "/users/:id", handler)
+//   result = router match("GET", "/users/42")
+//   result get("handler")                // the handler block
+//   result get("params") get("id")       // "42"
+
+Router = Object clone {
+    _routes = nil
+
+    new() {
+        r = self clone
+        r _routes = Array new()
+        r
+    }
+
+    add(method, pattern, handler) {
+        route = Object clone {}
+        route _method = method
+        route _pattern = pattern
+        route _handler = handler
+        // Pre-parse pattern into segments
+        route _segments = pattern split("/")
+        _routes push(route)
+        self
+    }
+
+    match(method, path) {
+        segments = path split("/")
+        result = nil
+
+        _routes each { |route|
+            (result == nil && route _method == method) ifTrue {
+                pat = route _segments
+                (pat size() == segments size()) ifTrue {
+                    params = Dict clone
+                    matched = 1
+                    i = 0
+                    pat each { |seg|
+                        (matched == 1) ifTrue {
+                            actual = segments at(i)
+                            (seg length() > 0 && seg at(0) == ":") ifTrue {
+                                // Param segment — capture value
+                                key = seg slice(1, seg length())
+                                params set(key, actual)
+                            } ifFalse {
+                                // Literal segment — must match exactly
+                                (seg != actual) ifTrue {
+                                    matched = 0
+                                }
+                            }
+                            i = i + 1
+                        }
+                    }
+                    (matched == 1) ifTrue {
+                        result = #{handler: route _handler, params: params}
+                    }
+                }
+            }
+        }
+        result
+    }
+}

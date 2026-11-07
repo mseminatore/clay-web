@@ -1,0 +1,11 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "description": "Clay web bricks -- HTTP server, URL router and ORM",
+  "main": "src/main.clay",
+  "deps": {
+    "web/http-server": "github.com/mseminatore/clay-web/http-server",
+    "web/router": "github.com/mseminatore/clay-web/router",
+    "web/orm": "github.com/mseminatore/clay-web/orm"
+  }
+}

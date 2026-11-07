@@ -1,0 +1,6 @@
+{
+  "name": "web/http-server",
+  "version": "0.1.0",
+  "description": "Simple HTTP server with routing for Clay",
+  "main": "src/main.clay"
+}

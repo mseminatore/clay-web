@@ -1,0 +1,132 @@
+// web/http-server -- Simple HTTP server with routing
+//
+// Usage:
+//   import("web/http-server")
+//
+//   server = HttpServer new(8080)
+//   server logging(true)
+//   server get("/", { |req| server html(200, "<h1>Hello!</h1>") })
+//   server get("/api/time", { |req| server json(200, Date now() toString()) })
+//   server start()
+
+HttpServer = Object clone {
+    _port = 8080
+    _routes = nil
+    _logging = false
+
+    new(port) {
+        s = self clone
+        s _port = port
+        s _routes = Array new()
+        s
+    }
+
+    logging(on) {
+        _logging = on
+        self
+    }
+
+    get(path, handler) {
+        route = Object clone {}
+        route _method = "GET"
+        route _path = path
+        route _handler = handler
+        _routes push(route)
+        self
+    }
+
+    post(path, handler) {
+        route = Object clone {}
+        route _method = "POST"
+        route _path = path
+        route _handler = handler
+        _routes push(route)
+        self
+    }
+
+    put(path, handler) {
+        route = Object clone {}
+        route _method = "PUT"
+        route _path = path
+        route _handler = handler
+        _routes push(route)
+        self
+    }
+
+    delete(path, handler) {
+        route = Object clone {}
+        route _method = "DELETE"
+        route _path = path
+        route _handler = handler
+        _routes push(route)
+        self
+    }
+
+    // Response helpers
+    text(status, body) {
+        Http response(status, body)
+    }
+
+    html(status, body) {
+        resp = Http response(status, body)
+        resp _content_type = "text/html"
+        resp
+    }
+
+    json(status, body) {
+        Http jsonResponse(status, body)
+    }
+
+    redirect(url) {
+        resp = Http response(302, "")
+        resp _location = url
+        resp
+    }
+
+    formData(req) {
+        Http parseForm(req body())
+    }
+
+    // Start the server (blocking)
+    start() {
+        routes = _routes
+        log = _logging
+        Http serve(_port, { |req|
+            method = req method()
+            path = req path()
+            (log == true) ifTrue {
+                (method + " " + path) println()
+            }
+            matched = nil
+            pathSegs = path split("/")
+
+            routes each { |route|
+                (matched == nil && route _method == method) ifTrue {
+                    patSegs = route _path split("/")
+                    (patSegs size() == pathSegs size()) ifTrue {
+                        params = Dict clone
+                        ok = 1
+                        idx = 0
+                        patSegs each { |seg|
+                            (ok == 1) ifTrue {
+                                actual = pathSegs at(idx)
+                                (seg length() > 0 && seg at(0) == ":") ifTrue {
+                                    params set(seg slice(1, seg length()), actual)
+                                } ifFalse {
+                                    (seg != actual) ifTrue { ok = 0 }
+                                }
+                                idx = idx + 1
+                            }
+                        }
+                        (ok == 1) ifTrue {
+                            req _params = params
+                            matched = route _handler(req)
+                        }
+                    }
+                }
+            }
+
+            matched ?? Http response(404, "Not Found")
+        })
+    }
+}

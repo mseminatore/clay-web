@@ -1,0 +1,6 @@
+{
+  "name": "web/router",
+  "version": "0.1.0",
+  "description": "URL pattern matching with :param capture for Clay HTTP servers",
+  "main": "src/main.clay"
+}

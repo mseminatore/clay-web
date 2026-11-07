@@ -1,0 +1,6 @@
+{
+  "name": "web/orm",
+  "version": "0.1.0",
+  "description": "ActiveRecord-style ORM over Clay's Db prototype",
+  "main": "src/main.clay"
+}
