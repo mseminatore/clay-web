@@ -1,5 +1,8 @@
 # web
 
+> **Note:** [Clay](https://github.com/mseminatore/clay) itself is not public yet, so links to the
+> Clay repository won't work until it is released.
+
 Web bricks for [Clay](https://github.com/mseminatore/clay): an HTTP server with routing, URL
 pattern matching and an ActiveRecord-style ORM. They build on Clay's built-in `Http` and `Db`
 prototypes.
